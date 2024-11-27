@@ -1,0 +1,14 @@
+Classy:
+MasterUkolnik
+Ukoly
+
+Pridavani/odebirani
+Procento splneni
+Serazeni dle data zadani/deadlinu
+Hodnoceni "těžkosti", serazeni dle ni
+
+Ukladat informace do json
+Nahrani ukolu z jsonu (merge ukolniku)
+
+grafy:
+vyvoj poctu nesplnenych ukolu (pribytek, reseni)
