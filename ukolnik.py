@@ -2,10 +2,10 @@ import time
 # print(time.localtime())
 # print(time.asctime(time.localtime()))
 class User:
-    def __init__(self,name,user_id,ukolniky) -> None:
+    def __init__(self,name,user_id,ukolniky: list = []) -> None:
         self.name = name
         self.user_id = user_id
-        self.ukolniky = ukolniky
+        self.ukolniky = ukolniky # list[Ukol]
     def add_ukolnik(self,ukolnik):
         self.ukolniky.append(ukolnik)
     def remove_ukolnik(self,ukolnik):
@@ -29,9 +29,9 @@ class Ukol:
         return
 
 class Ukolnik:
-    def __init__(self,name) -> None:
+    def __init__(self,name,ukoly: list = []) -> None:
         self.name = name
-        self.ukoly = []
+        self.ukoly = ukoly
         self.done = []
         self.failed = []
     def add_ukol(self,title,description,deadline,difficulty):
@@ -49,6 +49,11 @@ class Ukolnik:
     def search(self,key):
         return
     
+# testing data
+    
+tester = User("Testér",0,[Ukolnik("CADY",[Ukol("Hák 2","Udělej druhý hák nebo to vezmi od Adama",)])])
+
+
 # try loading Ukolniky from ukolnik.json
 # else create a new one
 # Ukolnik(input("Zadejte jméno svého prvního Úkolníku."))
