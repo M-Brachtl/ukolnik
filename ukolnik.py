@@ -6,12 +6,13 @@ class User:
         self.name = name
         self.user_id = user_id
         self.ukolniky = ukolniky # list[Ukol]
-    def add_ukolnik(self,ukolnik):
-        self.ukolniky.append(ukolnik)
+    def add_ukolnik(self,name):
+        self.ukolniky.append(Ukolnik(name))
     def remove_ukolnik(self,ukolnik):
         self.ukolniky.remove(ukolnik)
-    def list_ukoly(self,ordering = "abc"): # abc, dead(line), start, diff
-        return
+    def __str__(self):
+        return f"""Uživatel: {self.name}
+Úkolníky: {'\n\t  '.join((ukolnik.name + " - Nesplněné úkoly: " + str(len(ukolnik.ukoly)) for ukolnik in self.ukolniky))}"""
 
 class Ukol:
     def __init__(self,title,description,start_date,deadline) -> None:
@@ -41,10 +42,10 @@ class Ukol:
     def add_progress(self):
         pass
     def __str__(self):
-        return f"""    Jméno: {self.title}
-        Popis: {self.description}
-        Den začátku úkolu: {("Pondělí","Úterý","Středa","Čtvrtek","Pátek","Sobota","Neděle")[self.start_date.tm_wday] + " " + str(self.start_date.tm_mday) + ". " + str(self.start_date.tm_mon) + ". " + str(self.start_date.tm_year)}
-        Deadline: {("Pondělí","Úterý","Středa","Čtvrtek","Pátek","Sobota","Neděle")[self.deadline.tm_wday] + " " + str(self.deadline.tm_mday) + ". " + str(self.deadline.tm_mon) + ". " + str(self.deadline.tm_year)}
+        return f"""Jméno: {self.title}
+Popis: {self.description}
+Den začátku úkolu: {("Pondělí","Úterý","Středa","Čtvrtek","Pátek","Sobota","Neděle")[self.start_date.tm_wday] + " " + str(self.start_date.tm_mday) + ". " + str(self.start_date.tm_mon) + ". " + str(self.start_date.tm_year)}
+Deadline: {("Pondělí","Úterý","Středa","Čtvrtek","Pátek","Sobota","Neděle")[self.deadline.tm_wday] + " " + str(self.deadline.tm_mday) + ". " + str(self.deadline.tm_mon) + ". " + str(self.deadline.tm_year)}
 """
 
 class Ukolnik:
@@ -61,9 +62,9 @@ class Ukolnik:
         pass
     def __str__(self):
         return f"""{self.name}:
-Nesplněné úkoly: {'\n' + '\n\t'.join((ukolek.title + ' - ' + str(ukolek.deadline.tm_mday) + ". " + str(ukolek.deadline.tm_mon) + ". " + str(ukolek.deadline.tm_year) for ukolek in self.ukoly))}
-Dokončené úkoly: {'\n' + '\n\t'.join((ukolek.title for ukolek in self.ukoly))}
-Úkoly po deadlinu: {'\n' + '\n\t'.join((ukolek.title + ' - ' + str(ukolek.deadline.tm_mday) + ". " + str(ukolek.deadline.tm_mon) + ". " + str(ukolek.deadline.tm_year) for ukolek in self.ukoly))}
+Nesplněné úkoly: {'\n\t' + '\n\t'.join((ukolek.title + ' - ' + str(ukolek.deadline.tm_mday) + ". " + str(ukolek.deadline.tm_mon) + ". " + str(ukolek.deadline.tm_year) for ukolek in self.ukoly))}
+Dokončené úkoly: {'\n\t' + '\n\t'.join((ukolek.title for ukolek in self.ukoly))}
+Úkoly po deadlinu: {'\n\t' + '\n\t'.join((ukolek.title + ' - ' + str(ukolek.deadline.tm_mday) + ". " + str(ukolek.deadline.tm_mon) + ". " + str(ukolek.deadline.tm_year) for ukolek in self.ukoly))}
 """
     def plot_it(self):
         pass
@@ -75,7 +76,8 @@ Dokončené úkoly: {'\n' + '\n\t'.join((ukolek.title for ukolek in self.ukoly))
 # testing data
 
 tester = User("Testér",0,[Ukolnik("CAD",[Ukol("Hák 2","Udělej druhý hák nebo to vezmi od Adama","10/01/25","25/01/25"),Ukol("Ryba","Rys vodního tvora, za pomoci kót inženýra Dudy","08/01/25","14/01/25")])])
-print(tester.ukolniky[0])
+tester.add_ukolnik("PRG")
+print(tester)
 
 # try loading Ukolniky from ukolnik.json
 # else create a new one
