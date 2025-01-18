@@ -1,10 +1,12 @@
 import time
+from json import loads as jloads
 # print(time.localtime())
 # print(time.asctime(time.localtime()))
+def czech_asctime(the_time: time.struct_time):
+    return ("Pondělí","Úterý","Středa","Čtvrtek","Pátek","Sobota","Neděle")[the_time.tm_wday] + " " + str(the_time.tm_mday) + ". " + str(the_time.tm_mon) + ". " + str(the_time.tm_year)
 class User:
-    def __init__(self,name,user_id,ukolniky: list = []) -> None:
+    def __init__(self,name,ukolniky: list = []) -> None:
         self.name = name
-        self.user_id = user_id
         self.ukolniky = ukolniky # list[Ukol]
     def add_ukolnik(self,name):
         self.ukolniky.append(Ukolnik(name))
@@ -15,18 +17,20 @@ class User:
 Úkolníky: {'\n\t  '.join((ukolnik.name + " - Nesplněné úkoly: " + str(len(ukolnik.ukoly)) for ukolnik in self.ukolniky))}"""
 
 class Ukol:
-    def __init__(self,title,description,start_date,deadline) -> None:
+    def __init__(self,title,description,ukolnik,start_date,deadline) -> None:
         self.title = title
         self.description = description
-        try:
-            day,month,year = start_date.split("/") # musí být ve formátu dd/mm/yy
-            day,month,year = int(day),int(month),int(year)
-        except KeyError:
-            raise ValueError("Datum je zadáno v neplatném formátu.")
-        if len(start_date) != 8 or (day,month) in [(30,2),(31,2),(31,4),(31,6),(31,9),(31,11)] or not month in range(1,13) or not day in range(1,32) or ((day,month) == (29,2) and year % 4 != 0):
-            # print(len(start_date) == 8,(day,month) in [(30,2),(31,2),(31,4),(31,6),(31,9),(31,11)],not month in range(1,13),not day in range(1,32),((day,month) == (29,2) and year % 4 != 0))
-            raise ValueError("Datum je zadáno v neplatném formátu nebo jde o neexistující datum.")
-        self.start_date = time.localtime(time.mktime(time.struct_time((2000+year,month,day,23,59,59,-1,-1,-1))))
+        self.ukolnik = ukolnik
+        # try:
+        #     day,month,year = start_date.split("/") # musí být ve formátu dd/mm/yy
+        #     day,month,year = int(day),int(month),int(year)
+        # except KeyError:
+        #     raise ValueError("Datum je zadáno v neplatném formátu.")
+        # if len(start_date) != 8 or (day,month) in [(30,2),(31,2),(31,4),(31,6),(31,9),(31,11)] or not month in range(1,13) or not day in range(1,32) or ((day,month) == (29,2) and year % 4 != 0):
+        #     # print(len(start_date) == 8,(day,month) in [(30,2),(31,2),(31,4),(31,6),(31,9),(31,11)],not month in range(1,13),not day in range(1,32),((day,month) == (29,2) and year % 4 != 0))
+        #     raise ValueError("Datum je zadáno v neplatném formátu nebo jde o neexistující datum.")
+        # self.start_date = time.localtime(time.mktime(time.struct_time((2000+year,month,day,23,59,59,-1,-1,-1))))
+        self.start_date = start_date
         try:
             day,month,year = deadline.split("/") # musí být ve formátu dd/mm/yy
             day,month,year = int(day),int(month),int(year)
@@ -42,10 +46,10 @@ class Ukol:
     def add_progress(self):
         pass
     def __str__(self):
-        return f"""Jméno: {self.title}
+        return f"""Jméno: {self.title} ({self.ukolnik})
 Popis: {self.description}
-Den začátku úkolu: {("Pondělí","Úterý","Středa","Čtvrtek","Pátek","Sobota","Neděle")[self.start_date.tm_wday] + " " + str(self.start_date.tm_mday) + ". " + str(self.start_date.tm_mon) + ". " + str(self.start_date.tm_year)}
-Deadline: {("Pondělí","Úterý","Středa","Čtvrtek","Pátek","Sobota","Neděle")[self.deadline.tm_wday] + " " + str(self.deadline.tm_mday) + ". " + str(self.deadline.tm_mon) + ". " + str(self.deadline.tm_year)}
+Den začátku úkolu: {czech_asctime(self.start_date)}
+Deadline: {czech_asctime(self.deadline)}
 """
 
 class Ukolnik:
@@ -54,8 +58,8 @@ class Ukolnik:
         self.ukoly = ukoly
         self.done = []
         self.failed = []
-    def add_ukol(self,title,description,deadline,difficulty):
-        self.ukoly.append(Ukol(title,description,time.localtime(),deadline,difficulty))
+    def add_ukol(self,title,description,deadline):
+        self.ukoly.append(Ukol(title,description,self,time.localtime(),deadline))
     def delete_ukol(self,some_info):
         pass
     def load_from_JSON(self,filename):
@@ -73,12 +77,45 @@ Dokončené úkoly: {'\n\t' + '\n\t'.join((ukolek.title for ukolek in self.ukoly
     def search(self,key):
         return
     
-# testing data
 
-tester = User("Testér",0,[Ukolnik("CAD",[Ukol("Hák 2","Udělej druhý hák nebo to vezmi od Adama","10/01/25","25/01/25"),Ukol("Ryba","Rys vodního tvora, za pomoci kót inženýra Dudy","08/01/25","14/01/25")])])
-tester.add_ukolnik("PRG")
-print(tester)
+#start
+choice = ''
+while choice not in {'a','b'}:
+    choice = input("Můžete založit nového uživatele (a) nebo načíst ze souboru 'ukolnik.json (b)")
+if choice == "b":
+    # načítání z JSON
+    content = jloads(open("ukolnik.json","r",encoding='utf-8').read())
+    if content == {}:
+        print("Nemáte žádný uložený JSON.")
+    elif not isinstance(content,dict):
+        print("Soubor ukolnik.json je poškozený.")
+    else:
+        pass #načti ten json do objektů
+else:
+    user = User(input("Zadejte jméno:"))
 
-# try loading Ukolniky from ukolnik.json
-# else create a new one
-# Ukolnik(input("Zadejte jméno svého prvního Úkolníku."))
+## testing
+user.ukolniky.append(Ukolnik("Testovanie",[]))
+user.ukolniky[0].add_ukol("Test1","Slouží k testování úkolu s blízkým deadlinem","20/01/25")
+user.ukolniky[0].add_ukol("Test2","Slouží k testování úkolu s dalekým deadlinem","20/02/25")
+user.ukolniky[0].add_ukol("Test3","Slouží k testování úkolu s uběhlým deadlinem","17/01/25")
+##
+
+print(f"\nVítejte {user.name}")
+#kontrola blízkých deadlinů
+if user.ukolniky == []:
+    print("Nemáte žádné úkolníky. Založte si svůj první úkolník.")
+    user.add_ukolnik(input("Zadejte jméno úkolníku."))
+    print("Založili jste svůj první úkolník!")
+else:
+    close_deadline = []
+    for ukolnik in user.ukolniky:
+        for ukol in ukolnik.ukoly:
+            if round((time.mktime(ukol.deadline) - time.mktime(time.localtime()))/86400) <= 3:
+                close_deadline.append(ukol)
+    if close_deadline == []:
+        pass
+    else:
+        print("\nMáte nesplněné úkoly, které mají deadline do 3 dnů!")
+        for ukol in close_deadline:
+            print(f"{ukol.title} - {ukol.ukolnik.name}: {czech_asctime(ukol.deadline)}")
