@@ -12,13 +12,25 @@ class User:
         self.ukolniky.append(Ukolnik(name))
     def remove_ukolnik(self,ukolnik):
         self.ukolniky.remove(ukolnik)
+    def check_all_deadlines(self):
+        close_deadline: list[Ukol] = []
+        past_deadline: list[Ukol] = []
+        for ukolnik in user.ukolniky:
+            for ukol in ukolnik.ukoly:
+                check = ukol.deadline_check()
+                if check: # pokud je string neprázdný, pak je deadline do 3 dnů
+                    if not int(check): # pokud je číslo 0, pak je deadline 0-3 dny
+                        close_deadline.append(ukol)
+                    # případ, kdy je po deadlinu je ošetřen v rámci metody a náseldujícího řádku
+            past_deadline += ukolnik.failed # přidá všechny úkoly, které jsou po deadlinu
+        return (close_deadline,past_deadline)
     def __str__(self):
         return f"""Uživatel: {self.name}
 Úkolníky: {'\n\t  '.join((ukolnik.name + " - Nesplněné úkoly: " + str(len(ukolnik.ukoly)) for ukolnik in self.ukolniky))}"""
 
 class Ukol:
     def __init__(self,title,description,ukolnik,start_date,deadline) -> None:
-        self.title = title
+        self.title: str = title
         self.description = description
         self.ukolnik: Ukolnik = ukolnik
         # try:
@@ -44,9 +56,27 @@ class Ukol:
     def move_deadline(self):
         pass
     def add_progress(self,change):
-        pass
+        self.progress += change
+        if self.progress >= 100:
+            self.progress = 100
+            self.ukolnik.done.append(self)
+            if self in self.ukolnik.ukoly:
+                self.ukolnik.ukoly.remove(self)
+            else:
+                self.ukolnik.failed.remove(self)
+        return self.progress
+    def deadline_check(self): # -> ""/"0"/"1" = deadline > 3 dny/deadline 0-3 dny/deadline už uběhl
+        if round((time.mktime(self.deadline) - time.mktime(time.localtime()))/86400) <= 3: # 86400 je počet sekund v jednom dnu, mktime vrací počet sekund od pevného počátku
+            if round((time.mktime(self.deadline) - time.mktime(time.localtime()))/86400) < 0:
+                #přemísti úkol z nedokončených do po deadlinu
+                self.ukolnik.failed.append(self)
+                self.ukolnik.ukoly.remove(self)
+                return "1"
+            else:
+                return "0"
+        return ""
     def __str__(self):
-        return f"""Jméno: {self.title} ({self.ukolnik})
+        return f"""\nJméno: {self.title} ({self.ukolnik.name})
 Popis: {self.description}
 Den začátku úkolu: {czech_asctime(self.start_date)}
 Deadline: {czech_asctime(self.deadline)}
@@ -60,18 +90,18 @@ class Ukolnik:
         self.failed: list = []
     def add_ukol(self,title,description,deadline):
         self.ukoly.append(Ukol(title,description,self,time.localtime(),deadline))
-    def delete_ukol(self,ukol):
-        pass
+    def delete_ukol(self,ukol: Ukol,ukol_list: list):
+        ukol_list.remove(ukol)
     def load_from_JSON(self,filename):
         pass
     def __str__(self):
         return f"""{self.name}:
-Nesplněné úkoly: {'\n\t' + '\n\t'.join((ukolek.title + ' - ' + str(ukolek.deadline.tm_mday) + ". " + str(ukolek.deadline.tm_mon) + ". " + str(ukolek.deadline.tm_year) for ukolek in self.ukoly))}
-Dokončené úkoly: {'\n\t' + '\n\t'.join((ukolek.title for ukolek in self.ukoly))}
-Úkoly po deadlinu: {'\n\t' + '\n\t'.join((ukolek.title + ' - ' + str(ukolek.deadline.tm_mday) + ". " + str(ukolek.deadline.tm_mon) + ". " + str(ukolek.deadline.tm_year) for ukolek in self.ukoly))}
+Nesplněné úkoly: {'\n\t' + '\n\t'.join((str(i+1) + ': ' + ukolek.title + ' - ' + str(ukolek.deadline.tm_mday) + ". " + str(ukolek.deadline.tm_mon) + ". " + str(ukolek.deadline.tm_year) for i, ukolek in enumerate(self.ukoly)))}
+Dokončené úkoly: {'\n\t' + '\n\t'.join((str(i+self.list_lengths()[0]+1) + ': ' + ukolek.title for i, ukolek in enumerate(self.done)))}
+Úkoly po deadlinu: {'\n\t' + '\n\t'.join((str(i+self.list_lengths()[0]+self.list_lengths()[1]+1) + ': ' + ukolek.title + ' - ' + str(ukolek.deadline.tm_mday) + ". " + str(ukolek.deadline.tm_mon) + ". " + str(ukolek.deadline.tm_year) for i, ukolek in enumerate(self.failed)))}
 """
-    def search(self,key):
-        return
+    def list_lengths(self):
+        return (len(self.ukoly),len(self.done),len(self.failed))
     
 
 #start
@@ -104,18 +134,7 @@ if user.ukolniky == []:
     user.add_ukolnik(input("Zadejte jméno úkolníku."))
     print("Založili jste svůj první úkolník!")
 else:
-    close_deadline: list[Ukol] = []
-    past_deadline: list[Ukol] = []
-    for ukolnik in user.ukolniky:
-        for ukol in ukolnik.ukoly:
-            if round((time.mktime(ukol.deadline) - time.mktime(time.localtime()))/86400) <= 3: # 86400 je počet sekund v jednom dnu, mktime vrací počet sekund od pevného počátku
-                if round((time.mktime(ukol.deadline) - time.mktime(time.localtime()))/86400) < 0:
-                    #přemísti úkol z nedokončených do po deadlinu
-                    ukolnik.failed.append(ukol)
-                    ukolnik.ukoly.remove(ukol)
-                else:
-                    close_deadline.append(ukol)
-        past_deadline += ukolnik.failed # přidá všechny úkoly, které jsou po deadlinu
+    close_deadline, past_deadline = user.check_all_deadlines()
     if not close_deadline == []:
         print("\nMáte nesplněné úkoly, které mají deadline do 3 dnů!")
         for ukol in close_deadline:
@@ -138,15 +157,93 @@ while command:
                 print("Napište číslo úkolníku, do kterého chcete úkol přidat.")
                 subcommand = int(input("\n".join([str(num+1) + " - " + ukolnik.name for num, ukolnik in enumerate(user.ukolniky)]) + "\n")) - 1
             except ValueError:
+                print(subcommand)
                 subcommand = -1
         ukolnik = user.ukolniky[subcommand]
-        try: ukolnik.add_ukol(input("Zadejte název úkolu: "),input("Zadejte popis úkolu: "),input("Zadejte datum deadlinu ve formátu dd/mm/yy: "))
+        try:
+            ukolnik.add_ukol(input("Zadejte název úkolu: "),input("Zadejte popis úkolu: "),input("Zadejte datum deadlinu ve formátu dd/mm/yy: "))
+            check = ukolnik.ukoly[-1].deadline_check()
+            if check:
+                if int(check):
+                    print("Pozor, tento úkol už je po deadlinu!")
+                else:
+                    print("Pozor, tento úkol má deadline do tří dnů.")
         except ValueError as error:
             print(error) # neplatný formát atd. více v __int__ classy Ukol
-    if content == 2: # přidat úkolník
+    elif command == 2: # přidat úkolník
         command = -1
         user.add_ukolnik(input("Zadejte jméno úkolníku: "))
-    if content == 3: # progress
+    elif command == 3: # progress
+        command = -1
+        subcommand = -1
+        ukol_list_choice = (user.ukolniky[subcommand].ukoly,user.ukolniky[subcommand].failed)[bool(input("Pokud chcete měnit postup plnění u úkolu po deadlinu, napište 1. Jinak nepište nic. "))]
+        while subcommand not in range(len(user.ukolniky)):
+            try:
+                print("Napište číslo úkolníku, ze kterého chcete úkol vybrat.")
+                subcommand = int(input("\n".join([str(num+1) + " - " + ukolnik.name for num, ukolnik in enumerate(user.ukolniky)]) + "\n")) - 1
+            except ValueError:
+                subcommand = -1
+        subcommand2 = -1
+        while subcommand2 not in range(len(ukol_list_choice)):
+            try:
+                print("Napište číslo úkolu, který chcete upravit.")
+                subcommand2 = int(input("\n".join([str(num+1) + " - " + ukol.title for num, ukol in enumerate(ukol_list_choice)]) + "\n")) - 1
+            except ValueError:
+                subcommand2 = -1
+        ukol = ukol_list_choice[subcommand2]
+        change = 0
+        while not change:
+            try:
+                change = int(input(f"Zadejte, kolik % chcete přidat k dosavadnímu progresu úkolu ({ukol.progress})"))
+            except ValueError:
+                change = 0
+        result = ukol.add_progress(change)
+        if result == 100:
+            print(f"Momentální úroveň splnění je {result} %.")
+        else:
+            print("Výborně! Úkol máte splněn!")
+    elif command == 4: # kontrola deadlinů
+        command = -1
+        close_deadline, past_deadline = user.check_all_deadlines()
+        if not close_deadline == []:
+            print("\nMáte nesplněné úkoly, které mají deadline do 3 dnů!")
+            for ukol in close_deadline:
+                print(f"{ukol.title} - {ukol.ukolnik.name}: {czech_asctime(ukol.deadline)}")
+        if not past_deadline == []:
+            print("\nMáte nesplněné úkoly, které jsou po deadlinu!")
+            for ukol in past_deadline:
+                print(f"{ukol.title} - {ukol.ukolnik.name}: {czech_asctime(ukol.deadline)}")
+        print()
+    elif command == 5: #trvalý delete
+        command = -1
+        subcommand = -1
+        while subcommand not in range(len(user.ukolniky)):
+            try:
+                print("Napište číslo úkolníku, ze kterého chcete úkol vybrat.")
+                subcommand = int(input("\n".join([str(num+1) + " - " + ukolnik.name for num, ukolnik in enumerate(user.ukolniky)]) + "\n")) - 1
+            except ValueError:
+                subcommand = -1
+        subcommand2 = -1
+        list_choice_command = -1
+        while list_choice_command not in range(1,4):
+            try:
+                print("Napište číslo seznamu úkolů v úkolníku, ze kterého chcete úkol smazat.")
+                list_choice_command = int(input("""1 - Nesplněné úkoly
+2 - Hotové úkoly
+3 - Nesplěné úkoly po deadlinu"""))
+            except ValueError:
+                list_choice_command = -1
+        ukol_list_choice = (user.ukolniky[subcommand].ukoly,user.ukolniky[subcommand].done,user.ukolniky[subcommand].failed)[list_choice_command-1]
+        while subcommand2 not in range(len(ukol_list_choice)+1):
+            try:
+                print("Napište číslo úkolu, který chcete upravit.")
+                subcommand2 = int(input("\n".join([str(num+1) + " - " + ukol.title for num, ukol in enumerate(ukol_list_choice)]) + "\n")) - 1
+            except ValueError:
+                subcommand2 = -1
+        ukol = ukol_list_choice[subcommand2]
+        user.ukolniky[subcommand].delete_ukol(ukol,ukol_list_choice)
+        change = 0
+    elif command == 6: #printování
         command = -1
         subcommand = -1
         while subcommand not in range(len(user.ukolniky)):
@@ -155,33 +252,38 @@ while command:
                 subcommand = int(input("\n".join([str(num+1) + " - " + ukolnik.name for num, ukolnik in enumerate(user.ukolniky)]) + "\n")) - 1
             except ValueError:
                 subcommand = -1
+        print(user.ukolniky[subcommand])
+        list_lengths = user.ukolniky[subcommand].list_lengths()
         subcommand2 = -1
-        while subcommand2 not in range(len(user.ukolniky[subcommand])):
+        while subcommand2 not in range(sum(list_lengths)+1):
             try:
-                print("Napište číslo úkolníku, do kterého chcete úkol přidat.")
-                subcommand2 = int(input("\n".join([str(num+1) + " - " + ukol.title for num, ukol in enumerate(user.ukolniky[subcommand].ukoly)]) + "\n")) - 1
+                subcommand2 = int(input("Napište číslo úkolu, který chcete zobrazit. Pokud nechcete zobrazit žádný, napište 0. "))
             except ValueError:
                 subcommand2 = -1
-        ukol = user.ukolniky[subcommand].ukoly[subcommand2]
-        change = 0
-        while not change:
-            try:
-                change = int(input(f"Zadejte, kolik chcete přidat k dosavadnímu progresu úkolu ({ukol.progress})"))
-            except ValueError:
-                change = 0
-        ukol.add_progress(change)
+        if subcommand2:
+            subcommand2 -= 1
+            if subcommand2 <= list_lengths[0]:
+                print(user.ukolniky[subcommand].ukoly[subcommand2])
+            elif subcommand2 <= list_lengths[0]+list_lengths[1]:
+                print(user.ukolniky[subcommand].done[subcommand2-list_lengths[0]])
+            elif subcommand2 <= sum(list_lengths):
+                print(user.ukolniky[subcommand].failed[subcommand2-list_lengths[0]-list_lengths[1]])
+
     while command not in range(9):
+        input("Pro návrat do menu zmáčkněte ENTER")
         try:
             command = int(input("""Zadejte příkaz:
             0 - ukončení programu
             1 - přidání nového úkolu
             2 - přidání nového ukolníku
             3 - změna úrovně postupu plnění úkolu
-            4 - trvalé smazání úkolu
-            5 - změna deadlinu
-            6 - nahrání Ukolníku samostatně ze souboru
-            7 - uložit uživatele
-            8 - uložit úkolník odděleně
+            4 - kontrola deadlinů
+            5 - trvalé smazání úkolu
+            q - zobrazení úkolníku/úkolu
+            6 - změna deadlinu
+            7 - nahrání Ukolníku samostatně ze souboru
+            8 - uložit uživatele
+            9 - uložit úkolník odděleně
             """))
         except ValueError:
             command = -1
