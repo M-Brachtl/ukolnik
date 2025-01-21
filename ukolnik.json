@@ -1,2 +1,48 @@
 {
+    "name": "Matyk",
+    "ukolniky": [
+        {
+            "name": "Testovanie",
+            "ukoly": [
+                {
+                    "title": "Test 1",
+                    "description": "Slou\u017e\u00ed k testov\u00e1n\u00ed \u00fakolu s bl\u00edzk\u00fdm deadlinem",
+                    "start_date": "20/01/25",
+                    "deadline": "22/01/25",
+                    "progress": 50
+                },
+                {
+                    "title": "Test 2",
+                    "description": "Slou\u017e\u00ed k testov\u00e1n\u00ed \u00fakolu s dalek\u00fdm deadlinem",
+                    "start_date": "20/02/25",
+                    "deadline": "22/02/25",
+                    "progress": 0
+                }
+            ],
+            "done": [],
+            "failed": [
+                {
+                    "title": "Test 3",
+                    "description": "Slou\u017e\u00ed k testov\u00e1n\u00ed \u00fakolu s ub\u011bhl\u00fdm deadlinem",
+                    "start_date": "17/01/25",
+                    "deadline": "20/01/25",
+                    "progress": 0
+                }
+            ]
+        },
+        {
+            "name": "JSONing",
+            "ukoly": [
+                {
+                    "title": "JSONLoad",
+                    "description": "Uploadni toto do Jsonu",
+                    "start_date": "21/01/25",
+                    "deadline": "23/01/25",
+                    "progress": 0
+                }
+            ],
+            "done": [],
+            "failed": []
+        }
+    ]
 }
