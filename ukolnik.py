@@ -109,8 +109,8 @@ class Ukolnik:
         self.failed: list = []
     def add_ukol(self,title,description,deadline):
         self.ukoly.append(Ukol(title,description,self,time.localtime(),deadline))
-        if self.name == "JSONing":
-            print("AAAAAAAAAAAAAAAAAAAAAAAAAAAA")
+        #if self.name == "JSONing":
+            #print("AAAAAAAAAAAAAAAAAAAAAAAAAAAA")
     def delete_ukol(self,ukol: Ukol,ukol_list: list):
         ukol_list.remove(ukol)
     def __str__(self):
